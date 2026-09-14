@@ -15,7 +15,9 @@
     "xlsx": "tsx src/dev/make-workbook.ts",
     "errors": "tsx src/dev/print-errors.ts",
     "batch": "tsx src/dev/make-batch.ts",
-    "diagram": "tsx src/dev/make-diagram.ts"
+    "diagram": "tsx src/dev/make-diagram.ts",
+    "diagram:check": "tsx src/dev/check-diagram.ts",
+    "diagram:png": "tsx src/dev/render-diagram.ts"
   },
   "devDependencies": {
     "happy-dom": "^20.14.5",

@@ -116,7 +116,18 @@ npm run xlsx    -- --seed wam-1 --layout C        # één werkmap naar out/
 npm run errors  -- stroomgebied                   # alle foutcodes met hun impact
 npm run batch   -- --total 12 --layouts gemengd   # hele partij met sleutel naar out/batch/
 npm run diagram -- polder p1                      # het diagram als svg naar out/
+npm run diagram:check                             # telt overlappende labels in alle diagrammen
 ```
+
+Om een diagram met het oog te bekijken in plaats van te meten:
+
+```bash
+npm install --no-save sharp                       # rasterizer, alleen voor deze controle
+npm run diagram:png -- stad-wijk STR-02 beide     # png naar out/kijk/
+```
+
+`sharp` staat bewust niet in de afhankelijkheden: de tool zelf heeft hem niet nodig,
+want in de browser doet een canvas dit werk.
 
 ### Zelftests
 
@@ -129,7 +140,11 @@ npm run diagram -- polder p1                      # het diagram als svg naar out
 - de opmaak-assen veranderen nooit een getal in het bestand;
 - dezelfde seed levert twee keer dezelfde werkmap en dezelfde zip, tot op de byte, ook als er
   meerdere bestanden tegelijk gemaakt worden;
-- elke foutcode heeft een uitleg met minstens drie ankerantwoorden;
+- elke foutcode heeft een uitleg met minstens drie ankerantwoorden, en belooft nooit een
+  formule die niet in het bestand staat;
+- zit de fout in een formule, dan staat die formule er ook, in elke layout en bij elke stand
+  van de opmaak-assen;
+- in het diagram valt geen enkel label over een ander label, over een blokje of buiten het doek;
 - de studentbestanden noemen nergens een foutcode.
 
 ### Reproduceerbaarheid

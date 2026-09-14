@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildModel, contextIds } from '../src/catalog/contexts/index'
 import { solve } from '../src/core/solve'
 import { errorsForContext, buildVariant } from '../src/errors/index'
-import { buildDiagram } from '../src/render/diagram'
+import { buildDiagram, verdeelOverRegels } from '../src/render/diagram'
 import { toSvg } from '../src/render/shapes'
 import { defaultStyle, THEMES } from '../src/style/index'
 
@@ -58,6 +58,63 @@ describe('het bakkendiagram', () => {
     const punten = diagram.shapes.filter((s) => s.kind === 'polygon').length
     expect(lijnen).toBe(model.fluxes.length)
     expect(punten).toBe(model.fluxes.length)
+  })
+
+  it.each(
+    contextIds().flatMap((context) =>
+      errorsForContext(context)
+        .filter((def) => (def.layouts ?? ['A', 'B', 'C']).includes('A'))
+        .flatMap((def) =>
+          (['volluit', 'symbool', 'beide'] as const).flatMap((labels) =>
+            ['overlap', 'tweede', 'derde'].map((seed) => [context, def.code, labels, seed] as const),
+          ),
+        ),
+    ),
+  )('zet in %s bij %s met labels=%s (%s) geen enkel label over een ander heen', (context, code, labels, seed) => {
+    const variant = buildVariant(context, `${seed}-${code}`, code)
+    const diagram = buildDiagram(variant.model, variant.result, { ...defaultStyle(), labels })
+
+    const blokjes: Vak[] = []
+    const labelvakken: Vak[] = []
+    for (const shape of diagram.shapes) {
+      if (shape.kind !== 'rect') continue
+      const vak = { x: shape.x, y: shape.y, w: shape.w, h: shape.h }
+      // Een labelvlak heeft geen rand; een blokje wel.
+      if (shape.strokeWidth > 0) blokjes.push(vak)
+      else labelvakken.push(vak)
+    }
+
+    for (let i = 0; i < labelvakken.length; i++) {
+      for (let j = i + 1; j < labelvakken.length; j++) {
+        expect(overlapt(labelvakken[i]!, labelvakken[j]!), `label ${i} en ${j} overlappen`).toBe(false)
+      }
+      for (const blok of blokjes) {
+        expect(overlapt(labelvakken[i]!, blok), `label ${i} valt over een blokje`).toBe(false)
+      }
+      const vak = labelvakken[i]!
+      expect(vak.x).toBeGreaterThanOrEqual(0)
+      expect(vak.y).toBeGreaterThanOrEqual(0)
+      expect(vak.x + vak.w).toBeLessThanOrEqual(diagram.width)
+      expect(vak.y + vak.h).toBeLessThanOrEqual(diagram.height)
+    }
+  })
+
+  it('zet een lange naam over twee regels in plaats van hem af te kappen', () => {
+    expect(verdeelOverRegels('kwel')).toEqual(['kwel'])
+    expect(verdeelOverRegels('neerslag op het stroomgebied (P)')).toEqual([
+      'neerslag op het',
+      'stroomgebied (P)',
+    ])
+    // Elke pijl houdt zijn hele naam; er wordt niets weggelaten.
+    const model = buildModel('stroomgebied', 'namen')
+    const diagram = buildDiagram(model, solve(model), { ...defaultStyle(), labels: 'beide' })
+    const teksten = diagram.shapes.filter((s) => s.kind === 'text').map((s) => (s.kind === 'text' ? s.text : ''))
+    for (const flux of model.fluxes) {
+      const heel = `${flux.label} (${flux.symbol})`
+      const samen = teksten.join(' ')
+      for (const woord of heel.split(' ')) expect(samen).toContain(woord)
+    }
+    expect(teksten.some((t) => t.includes('…'))).toBe(false)
   })
 
   it('noemt elke bak en elke post bij naam', () => {
