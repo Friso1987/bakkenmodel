@@ -13,6 +13,8 @@ export const SCH_03: ErrorDef = {
   layer: 3,
   label: 'Deeloppervlak op de verkeerde bak',
   description: 'Een post wordt over het oppervlak van een ander deelgebied uitgerekend.',
+  // Welk oppervlak er gebruikt wordt, blijkt alleen uit de formule.
+  layouts: ['B', 'C'],
   applies: (model) => kandidaten(model).length > 0,
 
   apply: (model, rng) => {

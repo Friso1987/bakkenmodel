@@ -9,6 +9,7 @@ import {
   type Flux,
   type WaterBalanceModel,
 } from '../core/model'
+import { hashSeed } from '../core/rng'
 import type { SolveResult } from '../core/solve'
 import { unitLabel, type Unit } from '../core/units'
 import type { StyleChoices } from '../style/index'
@@ -114,14 +115,19 @@ function labelForTarget(model: WaterBalanceModel, id: string): string {
   )
 }
 
-/** Bepaalt of een cel een echte formule krijgt, volgens de as `formules`. */
+/**
+ * Bepaalt of een cel een echte formule krijgt, volgens de as `formules`.
+ *
+ * Posten waar de fout in zit, krijgen altijd hun formule. Zonder formule is
+ * zo'n fout niet na te lopen. Bij 'mix' is de verdeling pseudo-willekeurig en
+ * niet om en om: anders zou die ene verplichte post opvallen als het enige
+ * getal dat van het patroon afwijkt.
+ */
 export function formulaGate(model: WaterBalanceModel, style: StyleChoices): (id: string) => boolean {
-  if (style.formules === 'waarden') return () => false
+  const verplicht = new Set(model.presentation.formulaMustShow)
   if (style.formules === 'formules') return () => true
-  // Bij 'mix' krijgt om en om een post een formule. Dat moet reproduceerbaar
-  // zijn, dus het hangt aan de volgorde in het model en niet aan toeval.
-  const index = new Map(model.fluxes.map((flux, i) => [flux.id, i]))
-  return (id) => (index.get(id) ?? 0) % 2 === 0
+  if (style.formules === 'waarden') return (id) => verplicht.has(id)
+  return (id) => verplicht.has(id) || hashSeed(`${model.seed}:${id}`) % 100 < 60
 }
 
 export function assumptionDecimals(assumption: Assumption): number {

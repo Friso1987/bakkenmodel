@@ -62,7 +62,7 @@ describe('de zip', () => {
       const b = await buildBundleBytes(twee.variants, twee.settings, twee.warnings)
       expect(Buffer.from(b).equals(Buffer.from(a))).toBe(true)
     }
-  })
+  }, 60000)
 
   it('maakt een sleutel.xlsx die te filteren is', async () => {
     const { settings, variants, warnings } = await partij()

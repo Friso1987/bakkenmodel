@@ -84,7 +84,21 @@ describe('foutinjectie', () => {
     // De conclusie beweegt altijd mee met de uitkomst; dat is geen tweede fout.
     // Tenzij de foutmodule hem zelf noemt: dan ís de conclusie de fout.
     const conclusieIsDeFout = variant.applied.touched.includes('conclusie')
-    const echteVeranderingen = verschil.changedIds.filter((id) => id !== 'conclusie' || conclusieIsDeFout)
+    const presentatieIsDeFout = variant.applied.touched.includes('presentatie')
+
+    // injectError noteert zelf welke formules zichtbaar moeten blijven. Dat is
+    // administratie en geen tweede fout, maar verder mag er niets aan de
+    // presentatie veranderd zijn zonder dat de foutmodule het meldt.
+    if (verschil.changedIds.includes('presentatie') && !presentatieIsDeFout) {
+      const voor = { ...variant.mother.presentation, formulaMustShow: [] }
+      const na = { ...variant.model.presentation, formulaMustShow: [] }
+      expect(na, `${code} veranderde de presentatie zonder het te melden`).toEqual(voor)
+    }
+
+    const echteVeranderingen = verschil.changedIds.filter(
+      (id) =>
+        (id !== 'conclusie' || conclusieIsDeFout) && (id !== 'presentatie' || presentatieIsDeFout),
+    )
     expect(echteVeranderingen.length, `${code}: ${verschil.changes.join(' | ')}`).toBeGreaterThan(0)
 
     // Alles wat veranderd is, staat ook in de touched-lijst van de foutmodule.
@@ -182,3 +196,42 @@ function injectErrorSafe(model: Parameters<typeof injectError>[0], code: string,
   if (!def.applies(model)) return
   injectError(model, def, createRng(`${seed}:${code}`))
 }
+
+describe('de sleuteltekst en het bestand spreken elkaar niet tegen', () => {
+  it('belooft alleen een formule als die er ook echt staat', () => {
+    for (const [context, code, seed] of combinaties()) {
+      const variant = buildVariant(context, seed, code)
+      const uitleg = getError(code).explain(variant.model, variant.applied)
+      const noemtFormule = /\bde formule van\b/i.test(`${uitleg.wat} ${uitleg.gevolg}`)
+      if (!noemtFormule) continue
+
+      expect(
+        variant.model.presentation.formulaMustShow.length,
+        `${code} in ${context} verwijst naar een formule, maar eist niet dat die zichtbaar is`,
+      ).toBeGreaterThan(0)
+    }
+  })
+
+  it('eist een zichtbare formule voor elke fout die in een formule zit', () => {
+    for (const [context, code, seed] of combinaties()) {
+      const variant = buildVariant(context, seed, code)
+      const doel = variant.model.fluxes.find((flux) => flux.id === variant.applied.primary)
+      const origineel = variant.mother.fluxes.find((flux) => flux.id === variant.applied.primary)
+      if (!doel || !origineel) continue
+
+      const formuleVeranderd = JSON.stringify(doel.definition) !== JSON.stringify(origineel.definition)
+      if (!formuleVeranderd && doel.statedOverride === undefined) continue
+
+      expect(variant.model.presentation.formulaMustShow, `${code} in ${context}`).toContain(doel.id)
+      // En dan kan die fout niet in een diagram, want daar staan geen formules.
+      expect(getError(code).layouts ?? ['A', 'B', 'C']).not.toContain('A')
+    }
+  })
+
+  it('laat een foutloos model niets eisen', () => {
+    for (const context of CONTEXTS) {
+      const variant = buildVariant(context, 'schoon', 'NUL-00')
+      expect(variant.model.presentation.formulaMustShow).toEqual([])
+    }
+  })
+})

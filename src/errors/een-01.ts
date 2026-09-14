@@ -1,5 +1,6 @@
 import { add, ser } from '../core/expr'
 import { getFlux, labelOf } from '../core/model'
+import { unitLabel } from '../core/units'
 import { computedFluxes, exprOf, setExpr } from './helpers'
 import type { ErrorDef } from './types'
 
@@ -15,6 +16,8 @@ export const EEN_01: ErrorDef = {
   layer: 1,
   label: 'mm bij m³ opgeteld',
   description: 'Een waarde in millimeters wordt zonder omrekening bij een volume opgeteld.',
+  // De fout zit in een formule; een diagram toont alleen totalen.
+  layouts: ['B', 'C'],
   applies: (model) => model.inputs.some((i) => i.unit.startsWith('mm')) && computedFluxes(model).length > 0,
 
   apply: (model, rng) => {
@@ -34,7 +37,7 @@ export const EEN_01: ErrorDef = {
   explain: (model, applied) => {
     const flux = getFlux(model, applied.primary)
     return {
-      wat: `In de formule van ${flux.label} staat een term in millimeters opgeteld bij een volume in ${flux.unit}.`,
+      wat: `In de formule van ${flux.label} staat een term in millimeters opgeteld bij een volume in ${unitLabel(flux.unit)}.`,
       waarom:
         'Millimeters zijn een waterschijf, geen volume. Pas na vermenigvuldiging met het oppervlak waar die schijf op valt, ontstaat er een hoeveelheid water die je bij een ander volume mag optellen.',
       gevolg: `${labelOf(model, applied.primary)} komt te hoog uit, en daarmee ook alles wat daarvan afhangt. De fout is klein in getal en groot in principe.`,

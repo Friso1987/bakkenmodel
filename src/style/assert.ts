@@ -9,8 +9,9 @@
  * Deze controle draait bij elke gegenereerde variant. Slaat hij aan, dan is er
  * een bug in een layout of in een foutmodule, en niet iets om te negeren.
  */
+import type { WaterBalanceModel } from '../core/model'
 import type { LayoutId } from '../layout/index'
-import type { WorkbookPlan } from '../layout/plan'
+import { allCells, type WorkbookPlan } from '../layout/plan'
 
 export class StyleAssertionError extends Error {}
 
@@ -21,8 +22,26 @@ const MENGT_SECTIES = 'NAV-05'
 const VRAAGT_FORMULES = ['NAV-01', 'NAV-04', 'NAV-06']
 const VRAAGT_BRONNEN = 'SCH-06'
 
-export function assertErrorVisible(plan: WorkbookPlan, code: string, layout: LayoutId): void {
+export function assertErrorVisible(
+  plan: WorkbookPlan,
+  code: string,
+  layout: LayoutId,
+  model?: WaterBalanceModel,
+): void {
   const eisen: string[] = []
+
+  // De kern: zit de fout in een formule, dan moet die formule in het bestand
+  // staan. Anders ziet de student alleen een getal dat wat anders is en valt er
+  // niets na te lopen.
+  for (const fluxId of model?.presentation.formulaMustShow ?? []) {
+    const heeftFormule = allCells(plan).some((cell) => cell.elementId === fluxId && cell.formula !== undefined)
+    if (!heeftFormule) {
+      eisen.push(
+        `de fout zit in de formule van ${fluxId}, maar die formule staat niet in het bestand; ` +
+          'zo is er niets na te lopen',
+      )
+    }
+  }
 
   if (code === VERWIJDERT_EENHEDEN) {
     if (plan.meta.hasUnits) eisen.push('NAV-02 is gekozen, maar er staan nog eenheden in het bestand')

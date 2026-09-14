@@ -13,6 +13,8 @@ export const EEN_02: ErrorDef = {
   layer: 1,
   label: 'ha versus m², factor 10.000 zoek',
   description: 'Een oppervlak in hectare wordt gebruikt alsof het in vierkante meters staat.',
+  // De fout zit in een formule; een diagram toont alleen totalen.
+  layouts: ['B', 'C'],
   applies: (model) => computedFluxes(model).some((f) => containsFactor(exprOf(f), 10000)),
 
   apply: (model, rng) => {

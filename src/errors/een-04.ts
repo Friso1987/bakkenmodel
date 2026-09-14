@@ -1,5 +1,5 @@
 import { dependencies, transform, type Expr } from '../core/expr'
-import { findAssumption, getAssumption } from '../core/model'
+import { findAssumption, type WaterBalanceModel } from '../core/model'
 import type { ErrorDef } from './types'
 
 /**
@@ -13,6 +13,8 @@ export const EEN_04: ErrorDef = {
   layer: 1,
   label: 'debiet en volume verwisseld',
   description: 'Een debiet in l/s wordt zonder omrekening als een volume gebruikt.',
+  // De fout zit in een formule; een diagram toont alleen totalen.
+  layouts: ['B', 'C'],
   applies: (model) => model.assumptions.some((a) => a.unit === 'l/s'),
 
   apply: (model, rng) => {
@@ -31,16 +33,21 @@ export const EEN_04: ErrorDef = {
     }
 
     return {
-      primary: parameter.id,
+      // De sleutel wijst naar de post waar de omrekening ontbreekt, niet naar de
+      // parameter zelf: daar is de fout te zien en na te rekenen.
+      primary: aangeraakt[0] ?? parameter.id,
       touched: aangeraakt,
-      detail: `${parameter.label} staat in l/s en wordt gebruikt alsof het een volume in m³ is.`,
+      detail: `${parameter.label} staat in l/s en wordt in ${aangeraakt.length} post(en) gebruikt alsof het een volume in m³ is.`,
     }
   },
 
   explain: (model, applied) => {
-    const parameter = findAssumption(model, applied.primary) ?? getAssumption(model, applied.primary)
+    const parameter = debietParameter(model, applied.primary)
+    const flux = model.fluxes.find((f) => f.id === applied.primary)
     return {
-      wat: `${parameter.label} is een debiet in l/s, maar komt in de balans terecht als een hoeveelheid in m³.`,
+      wat:
+        `${parameter.label} is een debiet in l/s, maar komt in ${flux ? `de formule van ${flux.label}` : 'de balans'} ` +
+        'terecht als een hoeveelheid in m³.',
       waarom:
         'Een debiet is een hoeveelheid per tijd. Om er een volume van te maken moet je met de duur van de tijdstap vermenigvuldigen, en van liters naar kubieke meters delen door 1000.',
       gevolg:
@@ -52,6 +59,15 @@ export const EEN_04: ErrorDef = {
       ],
     }
   },
+}
+
+/** De parameter in l/s die deze post gebruikt. */
+function debietParameter(model: WaterBalanceModel, fluxId: string) {
+  const flux = model.fluxes.find((f) => f.id === fluxId)
+  const gebruikt =
+    flux && flux.definition.kind === 'expr' ? dependencies(flux.definition.expr).params : []
+  const viaFormule = model.assumptions.find((a) => a.unit === 'l/s' && gebruikt.includes(a.id))
+  return viaFormule ?? findAssumption(model, fluxId) ?? model.assumptions.find((a) => a.unit === 'l/s')!
 }
 
 /** Haalt de omrekening l/s naar m3 per tijdstap weg rond een parameter. */

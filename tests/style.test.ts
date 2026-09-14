@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildModel, contextIds } from '../src/catalog/contexts/index'
 import { solve } from '../src/core/solve'
 import { createRng } from '../src/core/rng'
-import { buildVariant, errorsForContext } from '../src/errors/index'
+import { buildVariant, errorsForContext, getError } from '../src/errors/index'
 import { buildPlan, LAYOUTS } from '../src/layout/index'
 import { allCells, allTables, planText, type WorkbookPlan } from '../src/layout/plan'
 import { renderWorkbook } from '../src/render/workbook'
@@ -213,5 +213,58 @@ describe('elke foutcode in elke toegestane layout', () => {
     const rendered = await renderWorkbook(plan, variant.model, variant.result, style)
     expect(rendered.buffer.length).toBeGreaterThan(4000)
     expect([rendered.buffer[0], rendered.buffer[1]]).toEqual([0x50, 0x4b])
+  })
+})
+
+describe('de fout moet na te lopen zijn', () => {
+  const combinaties = contextIds().flatMap((context) =>
+    errorsForContext(context).map((def) => [context, def.code] as const),
+  )
+
+  it.each(combinaties)('%s / %s: de formule met de fout staat in het bestand', (context, code) => {
+    const variant = buildVariant(context, `navolgbaar-${code}`, code)
+    const verplicht = variant.model.presentation.formulaMustShow
+    if (verplicht.length === 0) return
+
+    // Juist ook met de as op 'alleen waarden': die mag de fout niet wegpoetsen.
+    for (const formules of ['formules', 'waarden', 'mix'] as const) {
+      for (const layout of getError(code).layouts ?? LAYOUTS) {
+        const style = constrainStyle({ ...defaultStyle(), formules }, code, variant.model)
+        const plan = buildPlan(layout, variant.model, variant.result, style)
+        for (const fluxId of verplicht) {
+          const cellen = allCells(plan).filter((cel) => cel.elementId === fluxId)
+          expect(
+            cellen.some((cel) => cel.formula !== undefined),
+            `${code} in layout ${layout} met formules=${formules}: ${fluxId} heeft geen formule`,
+          ).toBe(true)
+        }
+        expect(() => assertErrorVisible(plan, code, layout, variant.model)).not.toThrow()
+      }
+    }
+  })
+
+  it('laat nooit één eenzame formule achter die de fout verraadt', () => {
+    for (const [context, code] of combinaties) {
+      const variant = buildVariant(context, `eenzaam-${code}`, code)
+      if (variant.model.presentation.formulaMustShow.length === 0) continue
+
+      const style = constrainStyle({ ...defaultStyle(), formules: 'waarden' }, code, variant.model)
+      const plan = buildPlan('B', variant.model, variant.result, style)
+      const metFormule = new Set(
+        allCells(plan)
+          .filter((cel) => cel.formula !== undefined && cel.elementId)
+          .map((cel) => cel.elementId!),
+      )
+      expect(metFormule.size, `${code} in ${context} laat maar één formule zien`).toBeGreaterThan(2)
+    }
+  })
+
+  it('zet een fout die in een formule zit nooit in een diagram', () => {
+    for (const [context, code] of combinaties) {
+      const def = getError(code)
+      const variant = buildVariant(context, 'diagramcheck', code)
+      if (variant.model.presentation.formulaMustShow.length === 0) continue
+      expect(def.layouts ?? LAYOUTS, `${def.code} mag niet in layout A`).not.toContain('A')
+    }
   })
 })

@@ -125,6 +125,7 @@ export function injectError(mother: WaterBalanceModel, def: ErrorDef, rng: Rng):
 
   const model = cloneModel(mother)
   const applied = def.apply(model, rng)
+  model.presentation.formulaMustShow = formulesDieZichtbaarMoetenZijn(mother, model, applied)
 
   // De conclusie beweegt mee met de nieuwe uitkomst, behalve als de fout hem
   // juist vastzet. Anders zou elke fout eruitzien als een interpretatiefout.
@@ -167,6 +168,34 @@ export function noError(mother: WaterBalanceModel): InjectedVariant {
     changedIds: [],
     layouts: null,
   }
+}
+
+/**
+ * Zit de fout in de formule van de post waar de sleutel naar wijst, dan moet
+ * die formule in het bestand staan. Anders ziet de student alleen een getal dat
+ * wat anders is, en valt er niets na te lopen.
+ *
+ * Het gaat uitsluitend om de post uit `primary`. Formules die alleen als
+ * bijvangst veranderden, bijvoorbeeld omdat er een term uit wegviel toen een
+ * andere post verdween, tellen niet mee: die fout is aan de ontbrekende post
+ * zelf te zien en heeft geen formule nodig.
+ *
+ * Dit wordt afgeleid, niet per foutmodule opgegeven, zodat geen enkele module
+ * het kan vergeten. style/assert.ts controleert het bij elke variant.
+ */
+function formulesDieZichtbaarMoetenZijn(
+  mother: WaterBalanceModel,
+  broken: WaterBalanceModel,
+  applied: ApplyResult,
+): string[] {
+  const voor = mother.fluxes.find((flux) => flux.id === applied.primary)
+  const na = broken.fluxes.find((flux) => flux.id === applied.primary)
+  // Een post die is toegevoegd of verdwenen valt op zichzelf al op.
+  if (!voor || !na) return []
+
+  const formuleVeranderd = JSON.stringify(voor.definition) !== JSON.stringify(na.definition)
+  const waardeWijktAf = na.statedOverride !== undefined
+  return formuleVeranderd || waardeWijktAf ? [na.id] : []
 }
 
 export function relativeDeviation(voor: number, na: number): number {

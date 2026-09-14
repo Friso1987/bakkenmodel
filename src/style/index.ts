@@ -131,7 +131,12 @@ export type StyleVariation = 'laag' | 'hoog'
  * `errorCode` beperkt de loting waar een fout anders onzichtbaar zou worden:
  * een fout in een formule zie je niet in een bestand zonder formules.
  */
-export function pickStyle(rng: Rng, variation: StyleVariation, errorCode?: string): StyleChoices {
+export function pickStyle(
+  rng: Rng,
+  variation: StyleVariation,
+  errorCode?: string,
+  model?: { presentation: { formulaMustShow: string[] } },
+): StyleChoices {
   const style = defaultStyle()
 
   if (variation === 'laag') {
@@ -150,16 +155,27 @@ export function pickStyle(rng: Rng, variation: StyleVariation, errorCode?: strin
     style.thema = rng.pick<ThemeId>(['zakelijk', 'blauwdruk', 'krijt', 'klassiek'])
   }
 
-  return constrainStyle(style, errorCode)
+  return constrainStyle(style, errorCode, model)
 }
 
 /**
  * Sommige fouten hebben een drager nodig. Zonder formules in het bestand valt
  * er niets te zien van een fout die in een formule zit.
  */
-export function constrainStyle(style: StyleChoices, errorCode?: string): StyleChoices {
-  if (!errorCode) return style
+export function constrainStyle(
+  style: StyleChoices,
+  errorCode?: string,
+  model?: { presentation: { formulaMustShow: string[] } },
+): StyleChoices {
   const out = { ...style }
+
+  // Zit de fout in een formule, dan moet er meer dan één formule in het bestand
+  // staan: een bestand met precies één formule wijst rechtstreeks naar de fout.
+  if ((model?.presentation.formulaMustShow.length ?? 0) > 0 && out.formules === 'waarden') {
+    out.formules = 'mix'
+  }
+
+  if (!errorCode) return out
   if (['NAV-01', 'NAV-04', 'NAV-06'].includes(errorCode)) out.formules = 'formules'
   if (errorCode === 'NAV-02') out.eenheden = 'in-kop'
   if (errorCode === 'NAV-05') out.tabbladen = 'een-tabblad'

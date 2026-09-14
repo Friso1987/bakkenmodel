@@ -46,9 +46,14 @@ export async function generateVariant(
       ? noError(mother)
       : injectError(mother, getError(planned.code), createRng(`${planned.seed}:${planned.code}`))
 
-  const style = pickStyle(createRng(`${planned.seed}:stijl`), settings.variation, planned.code)
+  const style = pickStyle(
+    createRng(`${planned.seed}:stijl`),
+    settings.variation,
+    planned.code,
+    injected.model,
+  )
   const plan = buildPlan(planned.layout, injected.model, injected.result, style)
-  assertErrorVisible(plan, planned.code, planned.layout)
+  assertErrorVisible(plan, planned.code, planned.layout, injected.model)
 
   const rendered = await renderWorkbook(plan, injected.model, injected.result, style, options)
 

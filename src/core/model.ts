@@ -170,10 +170,17 @@ export type PresentationFlags = {
   hideAssumptions: boolean
   /** NAV-05: invoer, berekening en uitvoer door elkaar, zonder kopjes. */
   interleave: boolean
+  /**
+   * Posten waarvan de formule zichtbaar moet zijn, omdat de fout daarin zit.
+   * Zonder formule is zo'n fout niet na te lopen: de student ziet alleen een
+   * getal dat een beetje anders is. injectError() vult dit automatisch,
+   * style/assert.ts controleert het.
+   */
+  formulaMustShow: string[]
 }
 
 export function defaultPresentation(): PresentationFlags {
-  return { hideUnits: false, hideAssumptions: false, interleave: false }
+  return { hideUnits: false, hideAssumptions: false, interleave: false, formulaMustShow: [] }
 }
 
 export type WaterBalanceModel = {
