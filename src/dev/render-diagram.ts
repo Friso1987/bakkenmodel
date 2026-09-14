@@ -7,14 +7,14 @@
  * zelf hem niet nodig heeft; in de browser doet een canvas dit werk:
  *
  *   npm install --no-save sharp
- *   npx tsx src/dev/render-diagram.ts
+ *   npx tsx src/dev/render-diagram.ts <context> <foutcode> <labelstijl> [seed] [thema]
  */
 import { mkdirSync } from 'node:fs'
 import { contextIds } from '../catalog/contexts/index'
 import type { ContextId } from '../core/model'
 import { buildVariant } from '../errors/index'
 import { buildDiagram } from '../render/diagram'
-import { defaultStyle, type LabelStyle } from '../style/index'
+import { defaultStyle, type LabelStyle, type ThemeId } from '../style/index'
 
 type Rasterizer = (svg: string, pad: string) => Promise<void>
 
@@ -36,6 +36,9 @@ async function laadRasterizer(): Promise<Rasterizer> {
 const context = (process.argv[2] ?? 'stad-wijk') as ContextId
 const code = process.argv[3] ?? 'NUL-00'
 const labels = (process.argv[4] ?? 'volluit') as LabelStyle
+/** Seed van de variant, bijvoorbeeld uit generatie.json van een partij. */
+const seed = process.argv[5] ?? `kijk-${code}`
+const thema = (process.argv[6] ?? 'zakelijk') as ThemeId
 
 if (!contextIds().includes(context)) {
   console.error(`Onbekende context: ${context}. Beschikbaar: ${contextIds().join(', ')}`)
@@ -43,10 +46,10 @@ if (!contextIds().includes(context)) {
 }
 
 const rasteren = await laadRasterizer()
-const variant = buildVariant(context, `kijk-${code}`, code)
-const diagram = buildDiagram(variant.model, variant.result, { ...defaultStyle(), labels })
+const variant = buildVariant(context, seed, code)
+const diagram = buildDiagram(variant.model, variant.result, { ...defaultStyle(), labels, thema })
 
 mkdirSync('out/kijk', { recursive: true })
-const pad = `out/kijk/${context}_${code}_${labels}.png`
+const pad = `out/kijk/${context}_${code}_${labels}_${thema}_${seed}.png`
 await rasteren(diagram.svg, pad)
 console.log(`${pad}  ${diagram.width}x${diagram.height}`)

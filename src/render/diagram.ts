@@ -212,7 +212,7 @@ export function buildDiagram(
     lijnen.push(pijlpunt(punten[punten.length - 2]!, punten[punten.length - 1]!, kleur(theme.headerFill)))
 
     teplaatsen.push({
-      tekst: verdeelOverRegels(nameOf(style, flux.label, flux.symbol)),
+      tekst: verdeelOverRegels(nameOf(style, flux.label, flux.symbol), theme.font),
       waarde: toonWaarden ? `${formatNumber(result.totals[flux.id] ?? 0, 0)}${eenheid('m³')}` : '',
       route: [start, eind],
       baanY,
@@ -223,12 +223,17 @@ export function buildDiagram(
 
   const bezet: Vak[] = nodes.map((n) => ({ x: n.x, y: n.y, w: n.w, h: n.h }))
   // De titel staat er ook; daar mag geen label overheen.
-  bezet.push({ x: MARGIN, y: 6, w: textWidth(model.title, 15), h: 22 })
+  bezet.push({ x: MARGIN, y: 6, w: textWidth(model.title, 15, theme.headingFont, true), h: 22 })
   const labels: Shape[] = []
 
   for (const item of teplaatsen) {
     const regels = item.waarde ? [...item.tekst, item.waarde] : item.tekst
-    const w = Math.max(...regels.map((r, i) => textWidth(r, LABEL_SIZE) * (i === regels.length - 1 && item.waarde ? 1.08 : 1))) + 10
+    const w =
+      Math.max(
+        ...regels.map((regel, i) =>
+          textWidth(regel, LABEL_SIZE, theme.font, item.waarde !== '' && i === regels.length - 1),
+        ),
+      ) + 12
     const h = regels.length * REGEL + 6
     const plek = kiesPlek(kandidatenVoor(item.route, item.baanY, w, h), w, h, bezet, breedte, hoogte)
     const vak: Vak = { x: plek.x - w / 2, y: plek.y - h / 2, w, h }
@@ -360,8 +365,8 @@ function overlapOppervlak(a: Vak, b: Vak): number {
 }
 
 /** Zet een lange naam over twee regels, op een spatie. */
-export function verdeelOverRegels(tekst: string): string[] {
-  if (textWidth(tekst, LABEL_SIZE) <= LABEL_MAX_W) return [tekst]
+export function verdeelOverRegels(tekst: string, font = ''): string[] {
+  if (textWidth(tekst, LABEL_SIZE, font) <= LABEL_MAX_W) return [tekst]
 
   const woorden = tekst.split(' ')
   if (woorden.length === 1) return [tekst]
@@ -370,8 +375,8 @@ export function verdeelOverRegels(tekst: string): string[] {
   let besteIndex = 1
   let besteVerschil = Number.POSITIVE_INFINITY
   for (let i = 1; i < woorden.length; i++) {
-    const links = textWidth(woorden.slice(0, i).join(' '), LABEL_SIZE)
-    const rechts = textWidth(woorden.slice(i).join(' '), LABEL_SIZE)
+    const links = textWidth(woorden.slice(0, i).join(' '), LABEL_SIZE, font)
+    const rechts = textWidth(woorden.slice(i).join(' '), LABEL_SIZE, font)
     const verschil = Math.abs(links - rechts)
     if (verschil < besteVerschil) {
       besteVerschil = verschil

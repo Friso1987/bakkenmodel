@@ -17,6 +17,7 @@ import {
 } from '../planning'
 import { LAYOUT_LABEL, type LayoutId } from '../layout/index'
 import type { StyleVariation } from '../style/index'
+import { BUILD_ID } from '../version'
 import { previewHtml } from './preview'
 
 type Staat = {
@@ -188,6 +189,10 @@ function teken(): void {
       <button class="tweede" data-actie="voorbeeld" ${staat.bezig || blokkerend ? 'disabled' : ''}>Toon één variant</button>
       <span class="status">${escape(staat.status)}</span>
     </div>
+
+    <p class="versie">
+      Versie ${escape(BUILD_ID)}. Ziet u een oude versie, ververs de pagina dan met Ctrl+F5.
+    </p>
 
     ${staat.preview ? `<h2>Voorbeeld</h2><p class="hint">${escape(staat.previewBijschrift)}</p>${staat.preview}` : ''}
   `

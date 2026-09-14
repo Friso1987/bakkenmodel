@@ -13,6 +13,7 @@ import JSZip from 'jszip'
 import type { GeneratedVariant, GenerateSettings } from './generate'
 import { keyMarkdown, keyTableRows } from './key'
 import { normalizeZip, VASTE_DATUM } from './render/zip'
+import { BUILD_ID } from './version'
 
 /**
  * Vaste datum en geen losse mapingangen: JSZip zet in een impliciet aangemaakte
@@ -72,6 +73,7 @@ export function generationJson(
   return JSON.stringify(
     {
       versie: 1,
+      generator: BUILD_ID,
       toelichting:
         'Met deze instellingen en deze seed levert de generator exact dezelfde bestanden op. ' +
         'Plak de seed terug in het invoerveld en zet de instellingen hieronder over.',

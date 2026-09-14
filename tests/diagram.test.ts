@@ -66,13 +66,17 @@ describe('het bakkendiagram', () => {
         .filter((def) => (def.layouts ?? ['A', 'B', 'C']).includes('A'))
         .flatMap((def) =>
           (['volluit', 'symbool', 'beide'] as const).flatMap((labels) =>
-            ['overlap', 'tweede', 'derde'].map((seed) => [context, def.code, labels, seed] as const),
+            // Het thema bepaalt het lettertype en dus de breedte van elk label;
+            // Verdana is fors breder dan Times New Roman.
+            (Object.keys(THEMES) as Array<keyof typeof THEMES>).map(
+              (thema) => [context, def.code, labels, thema] as const,
+            ),
           ),
         ),
     ),
-  )('zet in %s bij %s met labels=%s (%s) geen enkel label over een ander heen', (context, code, labels, seed) => {
-    const variant = buildVariant(context, `${seed}-${code}`, code)
-    const diagram = buildDiagram(variant.model, variant.result, { ...defaultStyle(), labels })
+  )('zet in %s bij %s met labels=%s en thema %s geen enkel label over een ander heen', (context, code, labels, thema) => {
+    const variant = buildVariant(context, `overlap-${code}`, code)
+    const diagram = buildDiagram(variant.model, variant.result, { ...defaultStyle(), labels, thema })
 
     const blokjes: Vak[] = []
     const labelvakken: Vak[] = []

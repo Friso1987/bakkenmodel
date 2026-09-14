@@ -2,7 +2,7 @@
 import { contextIds } from '../catalog/contexts/index'
 import { buildVariant, errorsForContext } from '../errors/index'
 import { buildDiagram } from '../render/diagram'
-import { defaultStyle, type LabelStyle } from '../style/index'
+import { defaultStyle, THEMES, type LabelStyle, type ThemeId } from '../style/index'
 
 type Vak = { x: number; y: number; w: number; h: number }
 
@@ -20,12 +20,13 @@ for (const context of contextIds()) {
     .filter((def) => (def.layouts ?? ['A', 'B', 'C']).includes('A'))
     .map((def) => def.code)
 
+  for (const thema of Object.keys(THEMES) as ThemeId[]) {
   for (const labels of ['volluit', 'symbool', 'beide'] as LabelStyle[]) {
     for (const code of codes) {
       for (const voorvoegsel of ['diagram', 'overlap', 'kijk', 'a', 'b']) {
       const seed = `${voorvoegsel}-${code}`
       const variant = buildVariant(context, seed, code)
-      const diagram = buildDiagram(variant.model, variant.result, { ...defaultStyle(), labels })
+      const diagram = buildDiagram(variant.model, variant.result, { ...defaultStyle(), labels, thema })
 
       const blokjes: Vak[] = []
       const labelvakken: Vak[] = []
@@ -48,12 +49,13 @@ for (const context of contextIds()) {
       if (opElkaar + opBlokje + buiten > 0) {
         mis += 1
         console.log(
-          `PROBLEEM ${context.padEnd(13)} ${code.padEnd(7)} labels=${labels.padEnd(8)} ${diagram.width}x${diagram.height}  ` +
+          `PROBLEEM ${context.padEnd(13)} ${code.padEnd(7)} thema=${thema.padEnd(10)} labels=${labels.padEnd(8)} ${diagram.width}x${diagram.height}  ` +
             `labels=${String(labelvakken.length).padStart(2)}  op elkaar=${opElkaar}  op blokje=${opBlokje}  buiten=${buiten}`,
         )
       }
       }
     }
+  }
   }
 }
 

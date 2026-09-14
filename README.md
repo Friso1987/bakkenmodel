@@ -161,27 +161,21 @@ wordt elk bestand na het schrijven opnieuw ingepakt met een vaste datum
 
 ## Nog te doen
 
-**Het diagram in layout A is nog niet goed leesbaar.** De labels overlappen elkaar niet meer
-en de routering is haaks, maar in Excel valt het plaatje nog tegen. Openstaand tot dat verholpen is.
+De labels in het diagram overlappen elkaar niet meer, in geen enkele context, foutcode,
+labelstijl of thema; `npm run diagram:check` meet dat over bijna tweeduizend varianten en de
+tests bewaken het. Of het er ook goed uitziet blijft iets om met het oog te controleren:
 
-Nog uit te zoeken wat er precies niet deugt, want daar hangt de oplossing van af:
+```bash
+npm install --no-save sharp                                  # rasterizer, alleen hiervoor
+npm run diagram:png -- stad-wijk NUL-00 beide kijk krijt     # png naar out/kijk/
+```
 
-- is het onscherp? Dan zit het in de rasterisatie: `canvasRasterizer(2)` in `src/render/raster.ts`
-  tekent op tweevoudige schaal, en `render/workbook.ts` plaatst de afbeelding op ware grootte
-  (`ext: { width: diagram.width, height: diagram.height }`). Bij een scherm met hoge
-  puntdichtheid kan een hogere schaal nodig zijn.
-- is de tekst te klein? De labels staan op 10 px en de blokjes op 12 px in een doek van
-  880 px breed (`LABEL_SIZE` en de maten bovenin `src/render/diagram.ts`). Groter lettertype
-  betekent een groter doek, want anders botsen de labels weer.
-- of is het gewoon te druk? Tien pijlen met elk een naam en een waarde in één plaat is veel.
-  Dan is de uitweg inhoudelijk: alleen symbolen bij de pijlen en de volle namen in een
-  legenda ernaast, of de waarden weglaten zoals layout C al doet.
+Het thema bepaalt het lettertype en daarmee de breedte van elk label. Verdana (thema `krijt`)
+is het breedst; dat is het geval om te controleren als er iets aan de maatvoering verandert.
 
-Om het te bekijken zonder de browser: `npm install --no-save sharp` en dan
-`npm run diagram:png -- stad-wijk NUL-00 volluit`. Let op dat dit de eigen rasterizer is;
-de browser gebruikt canvas, dus een verschil tussen die twee is op zichzelf al een aanwijzing.
-
-`npm run diagram:check` meet of labels elkaar raken, maar zegt niets over leesbaarheid.
+Melding over een gegenereerd bestand? Kijk eerst welke versie hem gemaakt heeft: die staat
+onderaan de pagina en in `generatie.json` onder `generator`. Een browser houdt de oude versie
+soms vast; Ctrl+F5 haalt de nieuwe op.
 
 ## Buiten scope
 

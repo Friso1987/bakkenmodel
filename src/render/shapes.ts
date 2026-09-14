@@ -101,9 +101,29 @@ function round(value: number): number {
   return Math.round(value * 100) / 100
 }
 
-/** Ruwe schatting van de tekstbreedte, genoeg om labels te laten passen. */
-export function textWidth(text: string, size: number): number {
-  return text.length * size * 0.55
+/**
+ * Gemiddelde tekenbreedte per lettertype, als deel van de tekengrootte.
+ *
+ * De plaatsing van de labels wordt hier berekend en niet in de browser: de
+ * generator moet op elke machine hetzelfde bestand opleveren, en een canvas
+ * meet per geïnstalleerd lettertype anders. Daarom een tabel, en bewust aan de
+ * ruime kant. Een schatting die te klein is, laat twee labels over elkaar heen
+ * vallen; een schatting die te ruim is, kost alleen wat witruimte.
+ *
+ * Verdana is fors breder dan Calibri; met één getal voor alles zou dat mis gaan.
+ */
+const TEKENBREEDTE: Array<[RegExp, number]> = [
+  [/verdana/i, 0.66],
+  [/consolas|mono/i, 0.58],
+  [/times|serif/i, 0.53],
+  [/calibri/i, 0.55],
+]
+const TEKENBREEDTE_STANDAARD = 0.62
+
+/** Schatting van de tekstbreedte, ruim genoeg om labels te laten passen. */
+export function textWidth(text: string, size: number, font = '', bold = false): number {
+  const factor = TEKENBREEDTE.find(([patroon]) => patroon.test(font))?.[1] ?? TEKENBREEDTE_STANDAARD
+  return text.length * size * factor * (bold ? 1.06 : 1)
 }
 
 /** Kort een label af zodat het binnen een breedte past. */

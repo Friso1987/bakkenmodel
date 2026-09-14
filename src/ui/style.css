@@ -115,3 +115,5 @@ button:disabled { opacity: 0.5; cursor: progress; }
 
 .zoekhulp { font-size: 0.85rem; color: var(--grijs); }
 a { color: var(--accent); }
+
+.versie { color: var(--grijs); font-size: 0.8rem; margin-top: 1.25rem; }
