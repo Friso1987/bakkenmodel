@@ -159,6 +159,30 @@ wordt elk bestand na het schrijven opnieuw ingepakt met een vaste datum
 `npm run build` zet de site in `docs/`. Zet in de repository-instellingen onder Pages de bron op
 **branch `main`, map `/docs`**, commit `docs/` mee, en de tool staat online.
 
+## Nog te doen
+
+**Het diagram in layout A is nog niet goed leesbaar.** De labels overlappen elkaar niet meer
+en de routering is haaks, maar in Excel valt het plaatje nog tegen. Openstaand tot dat verholpen is.
+
+Nog uit te zoeken wat er precies niet deugt, want daar hangt de oplossing van af:
+
+- is het onscherp? Dan zit het in de rasterisatie: `canvasRasterizer(2)` in `src/render/raster.ts`
+  tekent op tweevoudige schaal, en `render/workbook.ts` plaatst de afbeelding op ware grootte
+  (`ext: { width: diagram.width, height: diagram.height }`). Bij een scherm met hoge
+  puntdichtheid kan een hogere schaal nodig zijn.
+- is de tekst te klein? De labels staan op 10 px en de blokjes op 12 px in een doek van
+  880 px breed (`LABEL_SIZE` en de maten bovenin `src/render/diagram.ts`). Groter lettertype
+  betekent een groter doek, want anders botsen de labels weer.
+- of is het gewoon te druk? Tien pijlen met elk een naam en een waarde in één plaat is veel.
+  Dan is de uitweg inhoudelijk: alleen symbolen bij de pijlen en de volle namen in een
+  legenda ernaast, of de waarden weglaten zoals layout C al doet.
+
+Om het te bekijken zonder de browser: `npm install --no-save sharp` en dan
+`npm run diagram:png -- stad-wijk NUL-00 volluit`. Let op dat dit de eigen rasterizer is;
+de browser gebruikt canvas, dus een verschil tussen die twee is op zichzelf al een aanwijzing.
+
+`npm run diagram:check` meet of labels elkaar raken, maar zegt niets over leesbaarheid.
+
 ## Buiten scope
 
 Automatisch nakijken van studentantwoorden, inlog of opslag, een backend van welke aard dan ook,
