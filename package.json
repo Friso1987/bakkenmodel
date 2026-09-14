@@ -1,0 +1,31 @@
+{
+  "name": "bakkenmodel",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Generator voor bakkenmodellen met precies een ingebouwde fout, voor hbo-watermanagement",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "demo": "tsx src/dev/print-model.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "xlsx": "tsx src/dev/make-workbook.ts",
+    "errors": "tsx src/dev/print-errors.ts",
+    "batch": "tsx src/dev/make-batch.ts",
+    "diagram": "tsx src/dev/make-diagram.ts"
+  },
+  "devDependencies": {
+    "happy-dom": "^20.14.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5",
+    "vitest": "^2.1.8"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "jszip": "^3.10.1"
+  }
+}
